@@ -1,0 +1,9 @@
+flask
+pillow
+deoldify
+torch==1.13.1
+torchvision==0.14.1
+fastai==1.0.61
+matplotlib
+numpy
+opencv-python

@@ -1,0 +1,1046 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>ChromaAI — Colorize the Past</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+:root{
+  --bg:#0c0b09;
+  --bg2:#131210;
+  --bg3:#1a1916;
+  --bg4:#222020;
+  --gold:#c9973a;
+  --gold2:#e8b84b;
+  --gold-dim:rgba(201,151,58,0.15);
+  --cream:#f0e8d8;
+  --cream-dim:rgba(240,232,216,0.6);
+  --muted:#6b6457;
+  --muted2:#4a4540;
+  --border:rgba(201,151,58,0.12);
+  --border2:rgba(255,255,255,0.06);
+  --red:#c0392b;
+  --green:#27ae60;
+  --r:14px;
+  --shadow:0 24px 64px rgba(0,0,0,0.7);
+}
+
+html{scroll-behavior:smooth}
+
+body{
+  background:var(--bg);
+  color:var(--cream);
+  font-family:'Outfit',sans-serif;
+  font-weight:400;
+  min-height:100vh;
+  overflow-x:hidden;
+}
+
+/* ── GRAIN OVERLAY ── */
+body::after{
+  content:'';position:fixed;inset:0;
+  background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.035'/%3E%3C/svg%3E");
+  pointer-events:none;z-index:9999;opacity:.7;
+}
+
+/* ── AMBIENT GLOWS ── */
+.glow-1,.glow-2{position:fixed;border-radius:50%;filter:blur(120px);pointer-events:none;z-index:0}
+.glow-1{width:700px;height:700px;top:-200px;left:-200px;background:radial-gradient(circle,rgba(201,151,58,0.06) 0%,transparent 70%)}
+.glow-2{width:600px;height:600px;bottom:-150px;right:-150px;background:radial-gradient(circle,rgba(180,80,40,0.05) 0%,transparent 70%)}
+
+/* ── NAV ── */
+nav{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  padding:18px 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  background:rgba(12,11,9,0.85);
+  backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border);
+}
+.nav-logo{
+  font-family:'Playfair Display',serif;
+  font-size:1.4rem;font-weight:900;
+  color:var(--gold2);letter-spacing:.02em;
+}
+.nav-logo span{color:var(--cream);font-weight:400;font-style:italic}
+.nav-badge{
+  font-size:.68rem;font-weight:600;letter-spacing:.12em;
+  color:var(--gold);border:1px solid var(--border);
+  padding:4px 10px;border-radius:4px;text-transform:uppercase;
+}
+.nav-links{display:flex;gap:28px;align-items:center}
+.nav-links a{
+  color:var(--muted);font-size:.82rem;font-weight:500;
+  text-decoration:none;letter-spacing:.04em;
+  transition:color .2s;
+}
+.nav-links a:hover{color:var(--cream)}
+
+/* ── HERO ── */
+.hero{
+  position:relative;z-index:1;
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:100px 24px 60px;
+  text-align:center;
+  overflow:hidden;
+}
+
+/* Film strip decoration */
+.film-strip{
+  position:absolute;top:0;left:-20px;right:-20px;
+  height:60px;
+  display:flex;gap:0;
+  opacity:.06;pointer-events:none;
+}
+.film-strip-bottom{top:auto;bottom:0}
+.film-hole{
+  width:36px;height:100%;
+  border-right:2px solid var(--cream-dim);
+  flex-shrink:0;
+}
+.film-hole::before{
+  content:'';display:block;
+  width:18px;height:28px;
+  background:var(--bg);
+  border:1.5px solid var(--cream-dim);
+  border-radius:3px;
+  margin:16px auto 0;
+}
+
+.hero-eyebrow{
+  display:inline-flex;align-items:center;gap:8px;
+  font-size:.72rem;font-weight:600;letter-spacing:.18em;
+  color:var(--gold);text-transform:uppercase;
+  border:1px solid var(--border);
+  padding:6px 16px;border-radius:99px;
+  margin-bottom:28px;
+  animation:fadeUp .6s ease both;
+}
+.eyebrow-dot{width:5px;height:5px;border-radius:50%;background:var(--gold);animation:pulse 2s infinite}
+
+.hero-title{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(3rem,8vw,6.5rem);
+  font-weight:900;
+  line-height:.95;
+  letter-spacing:-.02em;
+  color:var(--cream);
+  margin-bottom:10px;
+  animation:fadeUp .7s .1s ease both;
+}
+.hero-title em{
+  font-style:italic;
+  background:linear-gradient(135deg,var(--gold) 0%,var(--gold2) 50%,#f5d48a 100%);
+  -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+}
+
+.hero-sub{
+  font-size:clamp(.9rem,2vw,1.1rem);
+  font-weight:300;color:var(--muted);
+  max-width:480px;line-height:1.6;
+  margin:0 auto 48px;
+  animation:fadeUp .7s .2s ease both;
+}
+
+.hero-cta{
+  animation:fadeUp .7s .3s ease both;
+  display:flex;gap:12px;justify-content:center;flex-wrap:wrap;
+}
+
+/* ── SCROLL INDICATOR ── */
+.scroll-hint{
+  position:absolute;bottom:32px;left:50%;transform:translateX(-50%);
+  display:flex;flex-direction:column;align-items:center;gap:8px;
+  color:var(--muted2);font-size:.7rem;letter-spacing:.1em;text-transform:uppercase;
+  animation:fadeUp 1s .6s ease both;
+}
+.scroll-line{
+  width:1px;height:40px;
+  background:linear-gradient(to bottom,var(--gold),transparent);
+  animation:scrollPulse 2s ease-in-out infinite;
+}
+@keyframes scrollPulse{0%,100%{opacity:.3;transform:scaleY(.5) translateY(-10px)}50%{opacity:1;transform:scaleY(1) translateY(0)}}
+
+/* ── MAIN CONTENT ── */
+main{position:relative;z-index:1;max-width:1000px;margin:0 auto;padding:0 24px 100px}
+
+/* ── SECTION LABEL ── */
+.section-label{
+  display:flex;align-items:center;gap:12px;
+  font-size:.7rem;font-weight:600;letter-spacing:.2em;
+  text-transform:uppercase;color:var(--gold);
+  margin-bottom:20px;
+}
+.section-label::after{content:'';flex:1;height:1px;background:var(--border)}
+
+/* ── CARD ── */
+.card{
+  background:var(--bg2);
+  border:1px solid var(--border2);
+  border-radius:var(--r);
+  padding:32px;
+  position:relative;overflow:hidden;
+}
+.card::before{
+  content:'';position:absolute;inset:0;
+  background:linear-gradient(135deg,rgba(201,151,58,0.03) 0%,transparent 60%);
+  pointer-events:none;
+}
+
+/* ── UPLOAD ZONE ── */
+.upload-zone{
+  border:1.5px dashed rgba(201,151,58,0.2);
+  border-radius:12px;
+  padding:48px 32px;
+  text-align:center;
+  cursor:pointer;
+  transition:all .25s;
+  position:relative;overflow:hidden;
+  background:rgba(201,151,58,0.02);
+}
+.upload-zone:hover{border-color:rgba(201,151,58,0.5);background:rgba(201,151,58,0.05)}
+.upload-zone.drag-over{
+  border-color:var(--gold);
+  background:rgba(201,151,58,0.08);
+  transform:scale(1.01);
+}
+.upload-zone.has-file{
+  border-style:solid;border-color:rgba(201,151,58,0.3);
+  padding:24px;
+}
+.upload-icon-wrap{
+  width:64px;height:64px;margin:0 auto 20px;
+  background:linear-gradient(135deg,rgba(201,151,58,0.15),rgba(201,151,58,0.05));
+  border:1px solid var(--border);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  font-size:1.8rem;
+  transition:transform .2s;
+}
+.upload-zone:hover .upload-icon-wrap{transform:translateY(-4px)}
+.upload-preview{
+  display:none;max-width:100%;max-height:260px;
+  border-radius:8px;object-fit:contain;
+  margin:0 auto 20px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.6);
+}
+.upload-preview.show{display:block;animation:fadeUp .4s ease}
+.upload-title{
+  font-family:'Playfair Display',serif;
+  font-size:1.1rem;font-weight:700;
+  color:var(--cream);margin-bottom:6px;
+}
+.upload-hint{font-size:.78rem;color:var(--muted);margin-bottom:24px}
+
+/* ── RENDER FACTOR ── */
+.rf-wrap{
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:10px;padding:20px 24px;margin-top:24px;
+}
+.rf-header{
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;
+}
+.rf-label{font-size:.8rem;font-weight:600;color:var(--cream-dim);letter-spacing:.06em}
+.rf-val{
+  font-family:'Playfair Display',serif;
+  font-size:1.3rem;font-weight:700;color:var(--gold2);
+}
+.rf-desc{font-size:.72rem;color:var(--muted);margin-bottom:14px}
+.rf-slider{
+  -webkit-appearance:none;appearance:none;
+  width:100%;height:4px;
+  border-radius:99px;
+  background:linear-gradient(to right,var(--gold) 0%,var(--gold) calc(var(--pct,62.5) * 1%),var(--bg4) calc(var(--pct,62.5) * 1%),var(--bg4) 100%);
+  outline:none;cursor:pointer;
+}
+.rf-slider::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  width:18px;height:18px;
+  border-radius:50%;
+  background:var(--gold2);
+  border:2px solid var(--bg2);
+  box-shadow:0 2px 8px rgba(201,151,58,0.5);
+  cursor:pointer;
+  transition:transform .15s,box-shadow .15s;
+}
+.rf-slider::-webkit-slider-thumb:hover{transform:scale(1.2);box-shadow:0 4px 16px rgba(201,151,58,0.7)}
+.rf-ticks{display:flex;justify-content:space-between;margin-top:6px}
+.rf-tick{font-size:.64rem;color:var(--muted2)}
+
+/* ── BUTTONS ── */
+.btn{
+  font-family:'Outfit',sans-serif;
+  font-weight:600;font-size:.82rem;
+  letter-spacing:.06em;text-transform:uppercase;
+  padding:13px 28px;border-radius:8px;
+  border:none;cursor:pointer;
+  transition:all .2s;display:inline-flex;align-items:center;gap:8px;
+  text-decoration:none;
+}
+.btn:active{transform:scale(.97)!important}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important;box-shadow:none!important}
+
+.btn-gold{
+  background:linear-gradient(135deg,var(--gold) 0%,#a87820 100%);
+  color:#0c0b09;
+  box-shadow:0 4px 20px rgba(201,151,58,0.3);
+}
+.btn-gold:hover:not(:disabled){
+  background:linear-gradient(135deg,var(--gold2) 0%,var(--gold) 100%);
+  box-shadow:0 6px 28px rgba(201,151,58,0.5);
+  transform:translateY(-1px);
+}
+.btn-outline{
+  background:transparent;
+  border:1px solid var(--border);
+  color:var(--cream-dim);
+}
+.btn-outline:hover:not(:disabled){border-color:rgba(201,151,58,0.4);color:var(--cream);background:rgba(201,151,58,0.05)}
+.btn-ghost{
+  background:var(--bg3);border:1px solid var(--border2);
+  color:var(--cream-dim);font-size:.75rem;
+}
+.btn-ghost:hover{background:var(--bg4);border-color:var(--border);color:var(--cream)}
+
+.btn-row{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:4px}
+
+/* ── LOADER ── */
+.loader-wrap{
+  display:none;margin-top:28px;
+  background:var(--bg3);border:1px solid var(--border2);
+  border-radius:12px;padding:24px;
+}
+.loader-wrap.show{display:block;animation:fadeUp .3s ease}
+
+.loader-top{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px}
+.loader-status{display:flex;align-items:center;gap:10px;font-size:.82rem;color:var(--cream)}
+.loader-spinner{
+  width:18px;height:18px;border-radius:50%;
+  border:2px solid rgba(201,151,58,0.2);
+  border-top-color:var(--gold);
+  animation:spin .8s linear infinite;flex-shrink:0;
+}
+.loader-pct{font-family:'Playfair Display',serif;font-size:.9rem;color:var(--gold)}
+
+.progress-track{
+  height:3px;background:var(--bg4);border-radius:99px;overflow:hidden;margin-bottom:12px;
+}
+.progress-fill{
+  height:100%;border-radius:99px;
+  background:linear-gradient(90deg,var(--gold),var(--gold2),#f5d48a);
+  background-size:200% 100%;
+  width:0%;transition:width .5s ease;
+}
+.progress-fill.run{animation:shimmer 1.5s linear infinite,indeterminate 2s ease-in-out infinite}
+@keyframes shimmer{0%{background-position:200% 0}100%{background-position:-200% 0}}
+@keyframes indeterminate{
+  0%{width:15%;margin-left:0}
+  50%{width:40%;margin-left:30%}
+  100%{width:15%;margin-left:85%}
+}
+.progress-fill.done{animation:shimmer 1.5s linear infinite;width:100%!important;margin-left:0!important}
+
+.loader-stages{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}
+.stage{
+  font-size:.65rem;font-weight:600;letter-spacing:.08em;
+  padding:3px 10px;border-radius:99px;
+  background:var(--bg4);color:var(--muted);
+  border:1px solid transparent;
+  transition:all .3s;
+}
+.stage.active{background:rgba(201,151,58,0.12);color:var(--gold);border-color:rgba(201,151,58,0.25)}
+.stage.done{background:rgba(39,174,96,0.1);color:#5fc47a;border-color:rgba(39,174,96,0.2)}
+
+/* ── ERROR ── */
+.error-box{
+  display:none;margin-top:20px;
+  background:rgba(192,57,43,0.08);
+  border:1px solid rgba(192,57,43,0.2);
+  border-radius:10px;padding:14px 18px;
+  font-size:.82rem;color:#e07060;
+}
+.error-box.show{display:block;animation:fadeUp .3s ease}
+
+/* ── RESULTS ── */
+.results-section{display:none;margin-top:48px}
+.results-section.show{display:block;animation:fadeUp .5s ease}
+
+.results-meta{
+  display:flex;align-items:center;gap:12px;flex-wrap:wrap;
+  margin-bottom:24px;
+}
+.meta-pill{
+  display:flex;align-items:center;gap:6px;
+  font-size:.72rem;font-weight:600;letter-spacing:.06em;
+  padding:5px 12px;border-radius:6px;
+}
+.pill-green{background:rgba(39,174,96,0.1);color:#5fc47a;border:1px solid rgba(39,174,96,0.2)}
+.pill-gold{background:rgba(201,151,58,0.1);color:var(--gold);border:1px solid rgba(201,151,58,0.2)}
+.pill-dot{width:5px;height:5px;border-radius:50%;background:currentColor}
+
+/* ── COMPARISON SLIDER ── */
+.comparison-wrap{
+  border-radius:var(--r);overflow:hidden;
+  position:relative;
+  background:var(--bg3);
+  border:1px solid var(--border2);
+  box-shadow:var(--shadow);
+  user-select:none;touch-action:none;
+  cursor:ew-resize;
+}
+.comp-base{display:block;width:100%;height:auto;object-fit:contain}
+.comp-overlay{
+  position:absolute;top:0;left:0;bottom:0;
+  overflow:hidden;
+  width:50%;
+}
+.comp-overlay img{
+  position:absolute;top:0;left:0;
+  display:block;
+  /* must match the full container width, not the clipped overlay width */
+  width:var(--comp-full-w, 100%);
+  height:auto;
+  object-fit:contain;
+}
+.comp-divider-line{
+  position:absolute;top:0;bottom:0;
+  left:50%;transform:translateX(-50%);
+  width:2px;
+  background:rgba(255,255,255,0.9);
+  box-shadow:0 0 16px rgba(255,255,255,0.4);
+  z-index:10;pointer-events:none;
+}
+.comp-handle-btn{
+  position:absolute;top:50%;left:50%;
+  transform:translate(-50%,-50%);
+  width:44px;height:44px;border-radius:50%;
+  background:#fff;
+  display:flex;align-items:center;justify-content:center;
+  box-shadow:0 4px 20px rgba(0,0,0,0.5);
+  pointer-events:none;
+  font-size:.9rem;color:#111;
+}
+.comp-label{
+  position:absolute;bottom:16px;
+  font-family:'Outfit',sans-serif;
+  font-size:.65rem;font-weight:700;letter-spacing:.12em;
+  text-transform:uppercase;padding:5px 12px;
+  border-radius:5px;backdrop-filter:blur(12px);
+  pointer-events:none;
+}
+.label-l{left:16px;background:rgba(0,0,0,0.55);color:rgba(255,255,255,0.7)}
+.label-r{right:16px;background:rgba(201,151,58,0.75);color:#fff}
+
+.drag-hint{
+  position:absolute;top:16px;left:50%;transform:translateX(-50%);
+  font-size:.65rem;font-weight:600;letter-spacing:.1em;text-transform:uppercase;
+  color:rgba(255,255,255,0.5);background:rgba(0,0,0,0.4);
+  padding:4px 12px;border-radius:99px;backdrop-filter:blur(8px);
+  pointer-events:none;white-space:nowrap;
+  transition:opacity .5s;
+}
+
+/* ── ACTION ROW ── */
+.action-row{
+  display:flex;gap:10px;flex-wrap:wrap;margin-top:20px;
+  align-items:center;
+}
+.action-row .spacer{flex:1}
+
+/* ── HISTORY ── */
+.history-section{margin-top:60px;display:none}
+.history-section.show{display:block;animation:fadeUp .5s ease}
+.history-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fill,minmax(200px,1fr));
+  gap:16px;margin-top:20px;
+}
+.history-card{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:10px;overflow:hidden;
+  cursor:pointer;transition:all .2s;
+  position:relative;
+}
+.history-card:hover{border-color:rgba(201,151,58,0.3);transform:translateY(-2px);box-shadow:0 12px 32px rgba(0,0,0,0.5)}
+.history-card img{width:100%;height:130px;object-fit:cover;display:block;filter:grayscale(30%)}
+.history-card:hover img{filter:grayscale(0%)}
+.history-info{padding:10px 12px}
+.history-name{font-size:.72rem;font-weight:600;color:var(--cream);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.history-time{font-size:.65rem;color:var(--muted);margin-top:2px}
+.history-badge{
+  position:absolute;top:8px;right:8px;
+  background:rgba(201,151,58,0.8);color:#111;
+  font-size:.58rem;font-weight:700;letter-spacing:.08em;
+  padding:2px 7px;border-radius:4px;
+}
+
+/* ── STATS BAR ── */
+.stats-bar{
+  display:grid;grid-template-columns:repeat(3,1fr);
+  gap:1px;background:var(--border2);
+  border:1px solid var(--border2);border-radius:12px;overflow:hidden;
+  margin-bottom:40px;
+}
+.stat-cell{
+  background:var(--bg2);padding:20px;text-align:center;
+}
+.stat-num{
+  font-family:'Playfair Display',serif;
+  font-size:1.8rem;font-weight:700;color:var(--gold2);
+  display:block;line-height:1;margin-bottom:4px;
+}
+.stat-lab{font-size:.7rem;font-weight:500;color:var(--muted);letter-spacing:.08em;text-transform:uppercase}
+
+/* ── HOW IT WORKS ── */
+.steps-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;margin-top:20px}
+.step-card{
+  background:var(--bg2);border:1px solid var(--border2);
+  border-radius:12px;padding:24px 20px;
+  position:relative;overflow:hidden;
+  transition:border-color .2s;
+}
+.step-card:hover{border-color:var(--border)}
+.step-num{
+  font-family:'Playfair Display',serif;
+  font-size:3rem;font-weight:900;
+  color:rgba(201,151,58,0.1);
+  position:absolute;top:-8px;right:12px;
+  line-height:1;
+}
+.step-icon{font-size:1.4rem;margin-bottom:12px}
+.step-title{font-size:.85rem;font-weight:600;color:var(--cream);margin-bottom:6px}
+.step-desc{font-size:.75rem;color:var(--muted);line-height:1.5}
+
+/* ── FOOTER ── */
+footer{
+  position:relative;z-index:1;
+  border-top:1px solid var(--border2);
+  padding:24px 40px;
+  display:flex;align-items:center;justify-content:space-between;
+  flex-wrap:wrap;gap:12px;
+}
+.foot-logo{font-family:'Playfair Display',serif;font-size:1rem;font-weight:700;color:var(--gold)}
+.foot-text{font-size:.72rem;color:var(--muted)}
+
+/* ── ANIMATIONS ── */
+@keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
+@keyframes spin{to{transform:rotate(360deg)}}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.7)}}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:var(--bg)}
+::-webkit-scrollbar-thumb{background:var(--bg4);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--muted2)}
+
+/* ── RESPONSIVE ── */
+@media(max-width:600px){
+  nav{padding:14px 20px}
+  .nav-links{display:none}
+  .hero{padding:80px 20px 60px}
+  .card{padding:20px}
+  main{padding:0 16px 60px}
+  .stats-bar{grid-template-columns:1fr 1fr}
+  .stats-bar .stat-cell:last-child{grid-column:span 2}
+}
+</style>
+</head>
+<body>
+
+<div class="glow-1"></div>
+<div class="glow-2"></div>
+
+<!-- NAV -->
+<nav>
+  <div class="nav-logo">Chroma<span>AI</span></div>
+  <div class="nav-links">
+    <a href="#colorize">Colorize</a>
+    <a href="#how">How It Works</a>
+    <a href="#history">History</a>
+  </div>
+  <div class="nav-badge">Powered by DeOldify</div>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <div class="film-strip" id="filmStrip"></div>
+  <div class="film-strip film-strip-bottom" id="filmStrip2"></div>
+
+  <div class="hero-eyebrow">
+    <span class="eyebrow-dot"></span>
+    AI Image Colorization
+  </div>
+
+  <h1 class="hero-title">
+    Bring the past<br/>
+    back to <em>life</em>
+  </h1>
+
+  <p class="hero-sub">
+    Upload any black & white photograph and watch our DeOldify-powered AI restore its original colors — in seconds.
+  </p>
+
+  <div class="hero-cta">
+    <a href="#colorize" class="btn btn-gold">
+      <span>🎨</span> Start Colorizing
+    </a>
+    <a href="#how" class="btn btn-outline">
+      How It Works
+    </a>
+  </div>
+
+  <div class="scroll-hint">
+    <span>Scroll</span>
+    <div class="scroll-line"></div>
+  </div>
+</section>
+
+<!-- MAIN -->
+<main>
+
+  <!-- STATS -->
+  <div class="stats-bar">
+    <div class="stat-cell">
+      <span class="stat-num" id="statImages">0</span>
+      <span class="stat-lab">Images Colorized</span>
+    </div>
+    <div class="stat-cell">
+      <span class="stat-num" id="statAvg">—</span>
+      <span class="stat-lab">Avg Process Time</span>
+    </div>
+    <div class="stat-cell">
+      <span class="stat-num">DeOldify</span>
+      <span class="stat-lab">AI Model</span>
+    </div>
+  </div>
+
+  <!-- COLORIZE SECTION -->
+  <section id="colorize">
+    <div class="section-label">Upload & Colorize</div>
+
+    <div class="card">
+      <!-- Drop Zone -->
+      <div class="upload-zone" id="dropZone">
+        <div class="upload-icon-wrap" id="uploadIcon">📷</div>
+        <img class="upload-preview" id="previewImg" alt="Preview"/>
+        <div class="upload-title" id="uploadTitle">Drop your image here</div>
+        <p class="upload-hint" id="uploadHint">PNG · JPG · JPEG · up to 20 MB</p>
+        <div class="btn-row">
+          <button class="btn btn-outline" onclick="document.getElementById('fileInput').click()">Choose Image</button>
+          <button class="btn btn-gold" id="colorizeBtn" disabled>
+            <span>✦</span> Colorize
+          </button>
+        </div>
+        <input type="file" id="fileInput" accept="image/*" style="display:none"/>
+      </div>
+
+      <!-- Render Factor -->
+      <div class="rf-wrap" id="rfWrap">
+        <div class="rf-header">
+          <div>
+            <div class="rf-label">Render Factor</div>
+            <div class="rf-desc">Higher = more detail but slower. Recommended: 30–35.</div>
+          </div>
+          <div class="rf-val" id="rfDisplay">35</div>
+        </div>
+        <input
+          type="range" min="10" max="45" value="35"
+          class="rf-slider" id="rfSlider"
+          oninput="updateRF(this.value)"
+        />
+        <div class="rf-ticks">
+          <span class="rf-tick">10 (Fast)</span>
+          <span class="rf-tick">25</span>
+          <span class="rf-tick">35 ✓</span>
+          <span class="rf-tick">45 (Detail)</span>
+        </div>
+      </div>
+
+      <!-- Loader -->
+      <div class="loader-wrap" id="loaderWrap">
+        <div class="loader-top">
+          <div class="loader-status">
+            <div class="loader-spinner"></div>
+            <span id="loaderText">Uploading image…</span>
+          </div>
+          <div class="loader-pct" id="loaderPct"></div>
+        </div>
+        <div class="progress-track">
+          <div class="progress-fill run" id="progressFill"></div>
+        </div>
+        <div class="loader-stages">
+          <div class="stage active" id="s1">Uploading</div>
+          <div class="stage" id="s2">Processing</div>
+          <div class="stage" id="s3">Colorizing</div>
+          <div class="stage" id="s4">Finalizing</div>
+        </div>
+      </div>
+
+      <!-- Error -->
+      <div class="error-box" id="errorBox"></div>
+    </div>
+  </section>
+
+  <!-- RESULTS -->
+  <section class="results-section" id="resultsSection">
+    <div class="section-label">Result</div>
+
+    <div class="results-meta" id="resultsMeta"></div>
+
+    <!-- Comparison slider -->
+    <div class="comparison-wrap" id="compWrap">
+      <img class="comp-base" id="imgBefore" src="" alt="Original"/>
+      <div class="comp-overlay" id="compOverlay">
+        <img id="imgAfter" src="" alt="Colorized"/>
+      </div>
+      <div class="comp-divider-line" id="compLine">
+        <div class="comp-handle-btn">⇔</div>
+      </div>
+      <span class="comp-label label-l">Original</span>
+      <span class="comp-label label-r">Colorized ✦</span>
+      <div class="drag-hint" id="dragHint">← Drag to Compare →</div>
+    </div>
+
+    <div class="action-row">
+      <a class="btn btn-gold" id="dlBtn" download="colorized.jpg">⬇ Download</a>
+      <button class="btn btn-outline" id="reuseBtn">↩ Try Another</button>
+      <div class="spacer"></div>
+      <button class="btn btn-ghost" id="shareBtn" onclick="copyLink()">⎘ Copy Link</button>
+    </div>
+  </section>
+
+  <!-- HOW IT WORKS -->
+  <section id="how" style="margin-top:60px">
+    <div class="section-label">How It Works</div>
+    <div class="steps-grid">
+      <div class="step-card">
+        <div class="step-num">01</div>
+        <div class="step-icon">📤</div>
+        <div class="step-title">Upload Your Image</div>
+        <div class="step-desc">Drag & drop or choose any black and white photo — JPG, PNG or JPEG up to 20 MB.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">02</div>
+        <div class="step-icon">⚙️</div>
+        <div class="step-title">Set Render Quality</div>
+        <div class="step-desc">Adjust the render factor to balance speed vs. quality. Higher values produce richer, more detailed colors.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">03</div>
+        <div class="step-icon">🧠</div>
+        <div class="step-title">DeOldify Processes</div>
+        <div class="step-desc">Our DeOldify deep learning model analyzes your image and predicts realistic color values for every pixel.</div>
+      </div>
+      <div class="step-card">
+        <div class="step-num">04</div>
+        <div class="step-icon">🎨</div>
+        <div class="step-title">Compare & Download</div>
+        <div class="step-desc">Use the interactive slider to compare before & after, then download your colorized image in full resolution.</div>
+      </div>
+    </div>
+  </section>
+
+  <!-- HISTORY -->
+  <section class="history-section" id="history">
+    <div class="section-label">Session History</div>
+    <div class="history-grid" id="historyGrid"></div>
+  </section>
+
+</main>
+
+<!-- FOOTER -->
+<footer>
+  <div class="foot-logo">ChromaAI</div>
+  <div class="foot-text">Powered by DeOldify · Built with Flask</div>
+  <div class="foot-text" id="footTime"></div>
+</footer>
+
+<script>
+// ── STATE ──
+let selectedFile = null;
+let history = [];
+let totalTime = 0;
+let sliderDragging = false;
+
+// ── FILM STRIP ──
+(function(){
+  ['filmStrip','filmStrip2'].forEach(id=>{
+    const el=document.getElementById(id);
+    for(let i=0;i<40;i++){const d=document.createElement('div');d.className='film-hole';el.appendChild(d);}
+  });
+})();
+
+// ── FOOTER TIME ──
+(function tick(){
+  const el=document.getElementById('footTime');
+  el.textContent=new Date().toLocaleTimeString();
+  setTimeout(tick,1000);
+})();
+
+// ── RENDER FACTOR ──
+function updateRF(v){
+  document.getElementById('rfDisplay').textContent=v;
+  const pct=((v-10)/(45-10))*100;
+  document.getElementById('rfSlider').style.setProperty('--pct',pct);
+}
+updateRF(35);
+
+// ── DRAG & DROP ──
+const dropZone=document.getElementById('dropZone');
+const fileInput=document.getElementById('fileInput');
+dropZone.addEventListener('dragover',e=>{e.preventDefault();dropZone.classList.add('drag-over');});
+dropZone.addEventListener('dragleave',()=>dropZone.classList.remove('drag-over'));
+dropZone.addEventListener('drop',e=>{
+  e.preventDefault();dropZone.classList.remove('drag-over');
+  const f=e.dataTransfer.files[0];
+  if(f&&f.type.startsWith('image/'))setFile(f);
+});
+fileInput.addEventListener('change',()=>{if(fileInput.files[0])setFile(fileInput.files[0]);});
+
+function setFile(f){
+  selectedFile=f;
+  const url=URL.createObjectURL(f);
+  const prev=document.getElementById('previewImg');
+  prev.src=url;prev.classList.add('show');
+  document.getElementById('uploadIcon').style.display='none';
+  document.getElementById('uploadTitle').textContent=f.name;
+  document.getElementById('uploadHint').textContent=(f.size/1024/1024).toFixed(2)+' MB · ready to colorize';
+  dropZone.classList.add('has-file');
+  document.getElementById('colorizeBtn').disabled=false;
+  document.getElementById('errorBox').classList.remove('show');
+  document.getElementById('resultsSection').classList.remove('show');
+}
+
+// ── COLORIZE ──
+document.getElementById('colorizeBtn').addEventListener('click', async()=>{
+  if(!selectedFile)return;
+
+  const rf=document.getElementById('rfSlider').value;
+  startLoader();
+
+  const fd=new FormData();
+  fd.append('image',selectedFile);
+  fd.append('render_factor',rf);
+
+  // Stage transitions
+  const stages=[
+    {id:'s1',text:'Uploading image…',delay:0},
+    {id:'s2',text:'Running DeOldify model…',delay:1800},
+    {id:'s3',text:'Applying color…',delay:4500},
+    {id:'s4',text:'Finalizing output…',delay:8000},
+  ];
+  const timers=[];
+  stages.forEach((s,i)=>{
+    timers.push(setTimeout(()=>{
+      stages.forEach((x,j)=>{
+        const el=document.getElementById(x.id);
+        el.className='stage'+(j<i?' done':j===i?' active':'');
+      });
+      document.getElementById('loaderText').textContent=s.text;
+    },s.delay));
+  });
+
+  try{
+    const res=await fetch('/colorize',{method:'POST',body:fd});
+    timers.forEach(clearTimeout);
+    if(!res.ok){const e=await res.json();throw new Error(e.error||'Server error');}
+    const data=await res.json();
+    stopLoader();
+    showResults(data);
+  }catch(err){
+    timers.forEach(clearTimeout);
+    showError(err.message);
+  }
+});
+
+function startLoader(){
+  document.getElementById('colorizeBtn').disabled=true;
+  const lw=document.getElementById('loaderWrap');
+  lw.classList.add('show');
+  document.getElementById('progressFill').classList.remove('done');
+  document.getElementById('progressFill').className='progress-fill run';
+  document.getElementById('loaderText').textContent='Uploading image…';
+  document.getElementById('loaderPct').textContent='';
+  document.getElementById('errorBox').classList.remove('show');
+  ['s1','s2','s3','s4'].forEach((id,i)=>{document.getElementById(id).className='stage'+(i===0?' active':'');});
+}
+
+function stopLoader(){
+  const fill=document.getElementById('progressFill');
+  fill.className='progress-fill done';
+  document.getElementById('loaderText').textContent='Done!';
+  ['s1','s2','s3','s4'].forEach(id=>{document.getElementById(id).className='stage done';});
+  setTimeout(()=>document.getElementById('loaderWrap').classList.remove('show'),900);
+}
+
+function showError(msg){
+  document.getElementById('loaderWrap').classList.remove('show');
+  const eb=document.getElementById('errorBox');
+  eb.textContent='⚠ '+msg;eb.classList.add('show');
+  document.getElementById('colorizeBtn').disabled=false;
+}
+
+// ── SHOW RESULTS ──
+function showResults(data){
+  // Meta pills
+  const meta=document.getElementById('resultsMeta');
+  meta.innerHTML=`
+    <div class="meta-pill pill-green"><span class="pill-dot"></span> Colorization Complete</div>
+    <div class="meta-pill pill-gold">⏱ ${data.elapsed}s</div>
+    <div class="meta-pill pill-gold">Render Factor: ${data.render_factor}</div>
+  `;
+
+  // Set image sources BEFORE initSlider so syncWidth sees real images
+  document.getElementById('imgBefore').src=data.original;
+  document.getElementById('imgAfter').src=data.colorized;
+  document.getElementById('dlBtn').href=data.colorized;
+
+  const rs=document.getElementById('resultsSection');
+  rs.classList.add('show');
+  rs.scrollIntoView({behavior:'smooth',block:'start'});
+
+  initSlider();
+
+  // Fade out drag hint after 3s
+  setTimeout(()=>{
+    const h=document.getElementById('dragHint');
+    if(h)h.style.opacity='0';
+  },3000);
+
+  // History + stats — only called ONCE here (addHistory handles history.push)
+  addHistory(data);
+}
+
+// ── COMPARISON SLIDER ──
+function initSlider(){
+  const wrap=document.getElementById('compWrap');
+  const overlay=document.getElementById('compOverlay');
+  const line=document.getElementById('compLine');
+  const base=document.getElementById('imgBefore');
+  const after=document.getElementById('imgAfter');
+
+  function syncWidth(){
+    const w=wrap.offsetWidth;
+    after.style.width=w+'px';
+    after.style.maxWidth='none';
+    after.style.height=base.offsetHeight+'px';
+  }
+
+  // Sync now if already loaded, and again on load/resize
+  if(base.complete && base.naturalWidth>0) syncWidth();
+  base.onload=syncWidth;
+  after.onload=syncWidth;
+  window.addEventListener('resize', syncWidth);
+
+  // Drag handlers directly on existing elements (no cloneNode)
+  let isDragging=false;
+
+  function onMove(clientX){
+    const r=wrap.getBoundingClientRect();
+    let p=((clientX-r.left)/r.width)*100;
+    p=Math.max(1,Math.min(99,p));
+    overlay.style.width=p+'%';
+    line.style.left=p+'%';
+  }
+
+  // Clean up any previous listeners using named refs stored on element
+  if(wrap._sliderCleanup) wrap._sliderCleanup();
+
+  const onMouseDown=e=>{isDragging=true;sliderDragging=true;onMove(e.clientX);e.preventDefault();};
+  const onMouseMove=e=>{if(isDragging)onMove(e.clientX);};
+  const onMouseUp  =()=>{isDragging=false;sliderDragging=false;};
+  const onTouchStart=e=>{isDragging=true;sliderDragging=true;onMove(e.touches[0].clientX);};
+  const onTouchMove =e=>{if(isDragging)onMove(e.touches[0].clientX);};
+  const onTouchEnd  =()=>{isDragging=false;sliderDragging=false;};
+
+  wrap.addEventListener('mousedown',onMouseDown);
+  window.addEventListener('mousemove',onMouseMove);
+  window.addEventListener('mouseup',onMouseUp);
+  wrap.addEventListener('touchstart',onTouchStart,{passive:true});
+  window.addEventListener('touchmove',onTouchMove,{passive:true});
+  window.addEventListener('touchend',onTouchEnd);
+
+  // Store cleanup fn so re-runs don't stack listeners
+  wrap._sliderCleanup=()=>{
+    wrap.removeEventListener('mousedown',onMouseDown);
+    window.removeEventListener('mousemove',onMouseMove);
+    window.removeEventListener('mouseup',onMouseUp);
+    wrap.removeEventListener('touchstart',onTouchStart);
+    window.removeEventListener('touchmove',onTouchMove);
+    window.removeEventListener('touchend',onTouchEnd);
+  };
+}
+
+// ── HISTORY ──
+function addHistory(data){
+  const entry={
+    colorized:data.colorized,
+    original:data.original,
+    elapsed:data.elapsed,
+    rf:data.render_factor,
+    time:new Date().toLocaleTimeString()
+  };
+  history.push(entry);
+
+  // Update stats (single source of truth)
+  totalTime+=data.elapsed;
+  document.getElementById('statImages').textContent=history.length;
+  document.getElementById('statAvg').textContent=(totalTime/history.length).toFixed(1)+'s';
+
+  const hs=document.getElementById('history');
+  hs.classList.add('show');
+
+  const grid=document.getElementById('historyGrid');
+  const card=document.createElement('div');
+  card.className='history-card';
+  card.innerHTML=`
+    <img src="${entry.colorized}" alt="Colorized"/>
+    <div class="history-badge">✦ COLOR</div>
+    <div class="history-info">
+      <div class="history-name">Colorized image</div>
+      <div class="history-time">${entry.time} · ${entry.elapsed}s · RF ${entry.rf}</div>
+    </div>
+  `;
+  card.addEventListener('click',()=>{
+    document.getElementById('imgBefore').src=entry.original;
+    document.getElementById('imgAfter').src=entry.colorized;
+    document.getElementById('dlBtn').href=entry.colorized;
+    document.getElementById('resultsSection').classList.add('show');
+    document.getElementById('resultsSection').scrollIntoView({behavior:'smooth'});
+  });
+  grid.prepend(card);
+}
+
+// ── RESET ──
+document.getElementById('reuseBtn').addEventListener('click', resetApp);
+function resetApp(){
+  selectedFile=null;sliderDragging=false;
+  const prev=document.getElementById('previewImg');
+  prev.src='';prev.classList.remove('show');
+  document.getElementById('uploadIcon').style.display='flex';
+  document.getElementById('uploadTitle').textContent='Drop your image here';
+  document.getElementById('uploadHint').textContent='PNG · JPG · JPEG · up to 20 MB';
+  dropZone.classList.remove('has-file');
+  document.getElementById('colorizeBtn').disabled=true;
+  document.getElementById('resultsSection').classList.remove('show');
+  document.getElementById('errorBox').classList.remove('show');
+  document.getElementById('loaderWrap').classList.remove('show');
+  fileInput.value='';
+  document.getElementById('colorize').scrollIntoView({behavior:'smooth'});
+}
+
+// ── COPY LINK ──
+function copyLink(){
+  const url=document.getElementById('dlBtn').href;
+  navigator.clipboard.writeText(window.location.origin+url).then(()=>{
+    const btn=document.getElementById('shareBtn');
+    const orig=btn.textContent;btn.textContent='✓ Copied!';
+    setTimeout(()=>btn.textContent=orig,2000);
+  });
+}
+</script>
+</body>
+</html>
